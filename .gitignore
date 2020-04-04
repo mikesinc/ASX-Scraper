@@ -1,0 +1,5 @@
+#ignore these files
+
+config.py
+/data
+__pycache__
