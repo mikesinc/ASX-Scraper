@@ -1,75 +1,131 @@
 #imports
 import yfinance as yf
-import csv
 import os
 import pandas as pd
-
-#Example list of tickers - Eventually replace with list that will read csv file containing tickers from user's excel doc.
-tickers = ["WPL.AX", "CBA.AX", "STO.AX", "CSL.AX"]
-# tickers = ["WPL.AX"]
+import pywintypes
+import xlwings as xw
 
 #create directory to store data
 directory = os.getcwd() + "/data"
 if not os.path.exists(directory):
     os.makedirs(directory)
 
-#GET STOCK GENERAL INFO
-#Create generator (doesn't store massive array in memory)
-def gen_ticker_info():
-    for ticker in tickers:
-        yield ticker, yf.Ticker(ticker).info
-#Create function to store ALL stock (in ticker list) general info in single csv file.
-def get_stock_info():
-    # Write stock data to csv file
-    csv_dict = {}
-    csv_dict_columns = list(next(gen_ticker_info())[1].keys())
-    for stock in gen_ticker_info():
-        csv_dict[stock[0]] = list(stock[1].values())
-        print(f'{stock[0]} data extract complete')
-    pd.DataFrame.from_dict(data=csv_dict, orient='index', columns=csv_dict_columns).to_csv(f'{directory}/all_stocks_info.csv', header=True)      
-    print("Stocks info updated!")
+# point to excel file and obtain ticker
+wb = xw.Book('Stocks.xlsm')
+main_sht = wb.sheets('MAIN')
+ticker = main_sht.range('C2').value
+
+#GET STOCK DATA
+def get_stock_info(ticker):
+    try:
+        print("--LOADING 0%-- Retrieving Stock info")
+        #Create csv file with data
+        pd.DataFrame.from_dict(yf.Ticker(ticker).info, orient="index").to_csv(f'{directory}/{ticker}_info.csv', header=False)
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_info.csv', header=None, names=['parameter', 'value'], index_col=0)
+        #Point to info sheet and insert data
+        sht = wb.sheets('info')
+        sht.clear()
+        sht.range('A1').value = csv_data
+    except:
+        print("Something went wrong retrieving stock info")
 
 #GET STOCK HISTORIC DATA
-def get_stock_history():
-    yf.download(tickers=tickers, period="5y", group_by="ticker").to_csv(f'{directory}/all_stocks_history.csv', header=True) 
-    print("Stocks history updated!")
+def get_stock_history(ticker):
+    try:
+        print("--LOADING 15%-- Retrieving Stock historical data")
+        #Create csv file with data
+        yf.download(ticker, period="max").to_csv(f'{directory}/{ticker}_history.csv', header=True) 
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_history.csv', index_col=0)
+        #Point to historic sheet and insert data
+        sht = wb.sheets('historic')
+        sht.clear()
+        sht.range('A1').value = csv_data
+    except:
+        print("Something went wrong retrieving stock historical data")
 
 #GET STOCK FINANCIALS DATA
-#Create function to store SINGLE stock financials info in csv file.
 def get_stock_financials(ticker):
-     # Write stock data to csv file
-    pd.DataFrame(data=yf.Ticker(ticker).financials).to_csv(f'{directory}/stock_financials.csv', header=True)      
-    print("Stock financials updated!")
+    try:
+        print("--LOADING 30%-- Retrieving Stock financials")
+        #Create csv file with data
+        pd.DataFrame(data=yf.Ticker(ticker).financials).to_csv(f'{directory}/{ticker}_financials.csv', header=True)
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_financials.csv', index_col=0)
+        #Point to finanicals sheet and insert data
+        sht = wb.sheets('financials')
+        sht.clear()
+        sht.range('A1').value = csv_data
+    except:
+        print("Something went wrong retrieving stock finanicals")
 
 #GET STOCK CASH FLOW DATA
-#Create function to store SINGLE stock cash flow info in csv file.
 def get_stock_cashflow(ticker):
-     # Write stock data to csv file
-    pd.DataFrame(data=yf.Ticker(ticker).cashflow).to_csv(f'{directory}/stock_cash_flow.csv', header=True)      
-    print("Stock cash flows updated!")
+    try:
+        print("--LOADING 45%-- Retrieving Stock cashflow")
+        #Create csv file with data
+        pd.DataFrame(data=yf.Ticker(ticker).cashflow).to_csv(f'{directory}/{ticker}_cash_flow.csv', header=True)    
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_cash_flow.csv', index_col=0)
+        #Point to cash flow sheet and insert data
+        sht = wb.sheets('cashflow')
+        sht.clear()
+        sht.range('A1').value = csv_data  
+    except:
+        print("Something went wrong retrieving stock cash flow")
 
 #GET STOCK BALANCE SHEET DATA
-#Create function to store SINGLE stock balance sheet info in csv file.
 def get_stock_balance_sheet(ticker):
-     # Write stock data to csv file
-    pd.DataFrame(data=yf.Ticker(ticker).balance_sheet).to_csv(f'{directory}/stock_balance_sheet.csv', header=True)      
-    print("Stock balance sheet updated!")
+    try:
+        print("--LOADING 60%-- Retrieving Stock balance sheet")
+        #Create csv file with data
+        pd.DataFrame(data=yf.Ticker(ticker).balance_sheet).to_csv(f'{directory}/{ticker}_balance_sheet.csv', header=True)      
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_balance_sheet.csv', index_col=0)
+        #Point to balance sheet and insert data
+        sht = wb.sheets('balance')
+        sht.clear()
+        sht.range('A1').value = csv_data  
+    except:
+        print("Something went wrong retrieving stock balance sheet")
 
 #GET STOCK EARNINGS DATA
-#Create function to store SINGLE stock balance sheet info in csv file.
 def get_stock_earnings(ticker):
-     # Write stock data to csv file
-    pd.DataFrame(data=yf.Ticker(ticker).earnings).to_csv(f'{directory}/stock_earnings.csv', header=True)      
-    print("Stock earnings updated!")
+    try:
+        print("--LOADING 75%-- Retrieving Stock earnings")
+        #Create csv file with data
+        pd.DataFrame(data=yf.Ticker(ticker).earnings).to_csv(f'{directory}/{ticker}_earnings.csv', header=True)      
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_earnings.csv', index_col=0)
+        #Point to earnings sheet and insert data
+        sht = wb.sheets('earnings')
+        sht.clear()
+        sht.range('A1').value = csv_data  
+    except:
+        print("Something went wrong retrieving stock earnings")
 
-#GET STOCK RECOMMENDATIONS DATA
-#Create function to store SINGLE stock balance sheet info in csv file.
+#GET STOCK DIVIDENDS DATA
 def get_stock_dividends(ticker):
-     # Write stock data to csv file
-    pd.DataFrame(data=yf.Ticker(ticker).dividends).to_csv(f'{directory}/stock_dividends.csv', header=True)      
-    print("Stock dividends updated!")
-
+    try:
+        print("--LOADING 90%-- Retrieving Stock dividends")
+        #Create csv file with data
+        pd.DataFrame(data=yf.Ticker(ticker).dividends).to_csv(f'{directory}/{ticker}_dividends.csv', header=True)      
+        #Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_dividends.csv', index_col=0)
+        #Point to earnings sheet and insert data
+        sht = wb.sheets('dividends')
+        sht.clear()
+        sht.range('A1').value = csv_data
+    except:
+        print("Something went wrong retrieving stock dividends")
 
 if __name__ == '__main__':
-    get_stock_info()
-    get_stock_history()
+    get_stock_info(ticker)
+    get_stock_history(ticker)
+    get_stock_financials(ticker)
+    get_stock_cashflow(ticker)
+    get_stock_balance_sheet(ticker)
+    get_stock_earnings(ticker)
+    get_stock_dividends(ticker)
+    print("--LOADING 100%-- Stock data loaded")
