@@ -3,4 +3,4 @@
 config.py
 /data
 __pycache__
-*.xlsx
+*.xlsm
