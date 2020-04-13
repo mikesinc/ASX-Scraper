@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import pywintypes
 import xlwings as xw
+import datetime
 
 #create directory to store data
 directory = os.getcwd() + "/data"
@@ -109,11 +110,16 @@ def get_stock_earnings(ticker):
 def get_stock_dividends(ticker):
     try:
         print("--LOADING 90%-- Retrieving Stock dividends")
-        #Create csv file with data
-        pd.DataFrame(data=yf.Ticker(ticker).dividends).to_csv(f'{directory}/{ticker}_dividends.csv', header=True)      
-        #Read csv file into formatted table
-        csv_data = pd.read_csv(f'{directory}/{ticker}_dividends.csv', index_col=0)
-        #Point to earnings sheet and insert data
+        #clean dates into years
+        dividends = yf.Ticker(ticker).dividends
+        clean_dividends = {}
+        for key in dividends.keys():
+            clean_dividends[key.year] = dividends[key]
+        # Create csv file with data
+        pd.DataFrame.from_dict(data=clean_dividends, orient='index').to_csv(f'{directory}/{ticker}_dividends.csv', header=False)      
+        # Read csv file into formatted table
+        csv_data = pd.read_csv(f'{directory}/{ticker}_dividends.csv', index_col=0, header=None, names=['date', 'dividend'])
+        # Point to earnings sheet and insert data
         sht = wb.sheets('dividends')
         sht.clear()
         sht.range('A1').value = csv_data
@@ -123,9 +129,9 @@ def get_stock_dividends(ticker):
 if __name__ == '__main__':
     get_stock_info(ticker)
     get_stock_history(ticker)
-    get_stock_financials(ticker)
-    get_stock_cashflow(ticker)
-    get_stock_balance_sheet(ticker)
-    get_stock_earnings(ticker)
+    # get_stock_financials(ticker)
+    # get_stock_cashflow(ticker)
+    # get_stock_balance_sheet(ticker)
+    # get_stock_earnings(ticker)
     get_stock_dividends(ticker)
     print("--LOADING 100%-- Stock data loaded")
