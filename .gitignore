@@ -4,3 +4,5 @@ config.py
 /data
 __pycache__
 *.xlsm
+*.exe
+*.log
