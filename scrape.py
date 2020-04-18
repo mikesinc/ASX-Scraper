@@ -15,7 +15,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver import ActionChains
 import config
+import random
 
 #Set directory
 directory = os.getcwd() + "/data"
@@ -28,9 +30,9 @@ main_sht = wb.sheets('MAIN')
 ticker = main_sht.range('C2').value
 
 #Store URLs
-urls = {'financials': f"https://www.morningstar.com.au/Stocks/CompanyHistoricals/{ticker}", "info": f"https://www.morningstar.com.au/Stocks/NewsAndQuotes/{ticker}", "fair": f"https://www.morningstar.com.au/Stocks/Overview/{ticker}", "balance": f"https://www.morningstar.com.au/Stocks/BalanceSheet/{ticker}"}
+urls = {'financials': f"https://www2.commsec.com.au/", "info": f"https://www.morningstar.com.au/Stocks/NewsAndQuotes/{ticker}"}
 
-#clean strings (remove spaces)
+#clean strings
 def remove_multiple_spaces(string):
     if type(string)==str:
         return string.replace(",","").replace(" ","").split("\n")
@@ -61,10 +63,11 @@ def get_info():
         summary_dict = dict(zip(headers,values))
         
         info_dict['open'] = summary_dict['Open Price']
+        info_dict['previous close'] = summary_dict['Prev Close']
         info_dict['day low'] = summary_dict['Day Range'].split("-")[0]
         info_dict['day high'] = summary_dict['Day Range'].split("-")[1]
-        info_dict['52 week low'] = summary_dict['Day Range'].split("-")[0]
-        info_dict['52 week high'] = summary_dict['Day Range'].split("-")[1]
+        info_dict['52 week high'] = summary_dict['52-Week Range'].split("-")[0]
+        info_dict['52 week low'] = summary_dict['52-Week Range'].split("-")[1]
         info_dict['market cap'] = summary_dict['Market Cap']
         info_dict['volume'] = summary_dict["Volume - 30 Day Avg"]
         info_dict['sector'] = summary_dict["GICS Sector"]
@@ -92,104 +95,93 @@ def get_stock_history():
 
 #Get financials
 def get_financials():
-    #Go to financials page
     try:
+        #Go to CommSec Stock Summary
         driver.get(urls['financials'])
-        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('loginButton'))
-        driver.find_element_by_id('loginButton').click()
-        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('loginFormNew'))
-        driver.find_element_by_xpath("//input[contains(@type, 'email')]").send_keys(config.ms_username)
-        driver.find_element_by_xpath("//input[contains(@type, 'password')]").send_keys(config.ms_password)
-        driver.find_element_by_xpath("//input[contains(@type, 'password')]").send_keys(Keys.ENTER)
-        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('pershare'))
-
-        #Beautiful Soup the tables
-        html = driver.page_source
-        soup = BeautifulSoup(html,'html.parser')
-        per_share, = pd.read_html(str(soup.findAll('table')[0]))
-        historical_financials, = pd.read_html(str(soup.findAll('table')[1]))
-        # cash_flow, = pd.read_html(str(soup.findAll('table')[2]))
-
-        #get other info values
-        driver.get(urls['fair'])
-        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('eqFVval'))
-        fair_value = driver.find_element_by_id('eqFVval')
-        uncertainty_rating = driver.find_element_by_id('eqURval')
-        previous_close = driver.find_element_by_class_name('textB2')
-        economic_moat = driver.find_element_by_id('eqEMval')
-        sht = wb.sheets('stock summary')
-
-        #Dump fair value
-        sht.range('A20').clear()
-        sht.range('B20').clear()
-        sht.range('A20').value = "Morningstar fair value"
-        sht.range('B20').value = fair_value.text
-
-        #Dump uncertainty_rating
-        sht.range('A21').clear()
-        sht.range('B21').clear()
-        sht.range('A21').value = "Morningstar Uncertainty Rating"
-        sht.range('B21').value = uncertainty_rating.text
-
-        #Dump previous_close value
-        sht.range('A22').clear()
-        sht.range('B22').clear()
-        sht.range('A22').value = "Previous close"
-        sht.range('B22').value = previous_close.text
-
-        #Dump economic_moat value
-        sht.range('A23').clear()
-        sht.range('B23').clear()
-        sht.range('A23').value = "Economic Moat"
-        sht.range('B23').value = economic_moat.text
-
-        #Get Balance sheet
-        driver.get(urls['balance'])
-        WebDriverWait(driver, 30).until(lambda d: d.find_elements_by_class_name('table1 dividendhisttable'))
-        alert = driver.switch_to_alert()
-        alert.dismiss()
-        #Beautiful Soup the table
-        html = driver.page_source
-        soup = BeautifulSoup(html,'html.parser')
-        print(soup)
-        cash_flow, = pd.read_html(str(soup.findAll('table')[2]))
-
-        per_share.to_csv(f'{directory}/{ticker}_statistics.csv', header=False)
-        historical_financials.to_csv(f'{directory}/{ticker}_financials.csv', header=False)
-        cash_flow.to_csv(f'{directory}/{ticker}_cashflow.csv', header=False)
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('loginPanel'))
+        #Login
+        driver.find_element_by_xpath("//input[contains(@id, 'ctl00_cpContent_txtLogin')]").send_keys(config.cs_id)
+        driver.find_element_by_xpath("//input[contains(@id, 'ctl00_cpContent_txtLogin')]").send_keys(Keys.TAB)
+        driver.find_element_by_xpath("//input[contains(@id, 'ctl00_cpContent_txtPassword')]").send_keys(config.cs_password)
+        driver.find_element_by_xpath("//input[contains(@id, 'ctl00_cpContent_txtPassword')]").send_keys(Keys.ENTER)
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_class_name('Level1Wrapper'))
         
-        # Read csv files into formatted table
-        csv_per_share = pd.read_csv(f'{directory}/{ticker}_statistics.csv', header=None, names=['parameter'] + list(range(date.today().year-10,date.today().year)), index_col=0)
-        csv_historical_financials = pd.read_csv(f'{directory}/{ticker}_financials.csv', header=None, names=['parameter'] + list(range(date.today().year-10,date.today().year)), index_col=0)
-        csv_cash_flow = pd.read_csv(f'{directory}/{ticker}_cashflow.csv', header=None, names=['parameter'] + list(range(date.today().year-10,date.today().year)), index_col=0)
-        # Point to per share statistics sheet and insert data
-        #Wipe excel sheet
-        sht = wb.sheets('per share statistics')
+        #Scrape Financials Summary page
+        driver.get(urls['financials'] + f'quotes/financials?stockCode={ticker}&exchangeCode=ASX#/financials/company')
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_tag_name('table'))
+        html = driver.page_source
+        soup = BeautifulSoup(html,  features="html5lib")
+        historical_statistics, = pd.read_html(str(soup.find('table')))
+        historical_statistics.to_csv(f'{directory}/{ticker}_statistics.csv', header=True, index=False)
+
+        #Scrape Historical Financials page
+        driver.get(urls['financials'] + f'quotes/financials?stockCode={ticker}&exchangeCode=ASX#/financials/historical')
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_tag_name('table'))
+        html = driver.page_source
+        soup = BeautifulSoup(html,  features="html5lib")
+        historical_financials, = pd.read_html(str(soup.find('table')))
+        historical_financials.to_csv(f'{directory}/{ticker}_financials.csv', header=True, index=False)
+
+        #Scrape Balance Sheet page
+        driver.get(urls['financials'] + f'quotes/financials?stockCode={ticker}&exchangeCode=ASX#/financials/balance')
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_tag_name('table'))
+        html = driver.page_source
+        soup = BeautifulSoup(html,  features="html5lib")
+        balance_sheet, = pd.read_html(str(soup.find('table')))
+        balance_sheet.to_csv(f'{directory}/{ticker}_balance.csv', header=True, index=False)
+
+        #Scrape Fair Value
+        driver.get(urls['financials'] + f'quotes/recommendations?stockCode={ticker}&exchangeCode=ASX#/recommendations/premium')
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('recommendations-container'))
+        driver.get(urls['financials'] + f'quotes/recommendations?stockCode={ticker}&exchangeCode=ASX#/recommendations/premium')
+        WebDriverWait(driver, 30).until(lambda d: d.find_element_by_class_name("mstar-premium-overview-contain"))
+        fair_value = driver.find_elements_by_tag_name("strong")[2].text
+        fair_uncertainty = driver.find_elements_by_tag_name("strong")[3].text
+        
+        sht = wb.sheets('stock summary')
+        sht.range('A17').clear()
+        sht.range('B17').clear()
+        sht.range('A18').clear()
+        sht.range('B18').clear()
+        sht.range('A19').clear()
+        sht.range('B19').clear()
+        sht.range('A17').value = "fair value"
+        sht.range('B17').value = fair_value
+        sht.range('A18').value = "fair uncertainty"
+        sht.range('B18').value = fair_uncertainty
+
+        #Read csv files into excel 
+        csv_historical_statistics = pd.read_csv(f'{directory}/{ticker}_statistics.csv', header=0, index_col=0)
+        csv_historical_financials = pd.read_csv(f'{directory}/{ticker}_financials.csv', header=0, index_col=0)
+        csv_balance_sheet = pd.read_csv(f'{directory}/{ticker}_balance.csv', header=0, index_col=0)
+        # Point to statistics sheet and insert data
+        sht = wb.sheets('historical statistics')
         sht.clear()
-        sht.range('A1').value = csv_per_share
-        # Point to historical financials sheet and insert data
-        #Wipe excel sheet
+        sht.range('A1').value = csv_historical_statistics
+        # Point to financials sheet and insert data
         sht = wb.sheets('historical financials')
         sht.clear()
         sht.range('A1').value = csv_historical_financials
-        # Point to cash flow sheet and insert data
-        #Wipe excel sheet
-        sht = wb.sheets('cash flow')
+        # Point to financials sheet and insert data
+        sht = wb.sheets('balance sheet')
         sht.clear()
-        sht.range('A1').value = csv_cash_flow
+        sht.range('A1').value = csv_balance_sheet
+
     except:
-        print("Something went wrong retrieving stock finanical data")
+        print("Something went wrong retrieving financial data")
 
 if __name__ == '__main__':
     # Initialise Driver
     options = Options()
-    # options.headless = True
-    options.set_preference('dom.webnotifications.enabled', False)
-    # fp = webdriver.FirefoxProfile()
-    # fp.set_preference("dom.webnotifications.enabled", False) 
+    options.headless = True
+    # geckodriver = os.getcwd()
+    # driver = webdriver.Firefox(executable_path=geckodriver, options=options)
     binary = FirefoxBinary(r'C:\Program Files\Mozilla Firefox\firefox.exe')
     driver = webdriver.Firefox(firefox_binary=binary, options=options)
-    # Extract Data
+    # except:
+    #     print("Failed to intialise driver")
+    
+    # Scrape Functions
     print("--LOADING 0%-- Retrieving info")
     get_info()
     print("--LOADING 40%-- Retrieving historical prices")
