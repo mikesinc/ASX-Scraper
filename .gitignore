@@ -6,3 +6,7 @@ __pycache__
 *.xlsm
 *.exe
 *.log
+*.csv
+scrape-fair-value.py
+patch.py
+main-scrape.py
