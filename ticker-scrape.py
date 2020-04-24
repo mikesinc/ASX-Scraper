@@ -23,7 +23,7 @@ if not os.path.exists(directory):
 try:
     wb = xw.Book('ASXScraper.xlsm')
     main_sht = wb.sheets(str(sys.argv[1]))
-    ticker = main_sht.range('C2').value
+    ticker = main_sht.range('C4').value
 except:
     print('Could not find the worksheet!')
     print('Press any key to close...')
@@ -38,8 +38,8 @@ def remove_multiple_spaces(string):
 
 #Get historical data
 def get_stock_history():
-    sheet_list = ['historical price - max', 'historical price - 5y', 'historical price - 1y', 'historical price - 6mo', 'historical price - 3mo', 'historical price - 1mo', 'historical price - 10d', 'historical price - 1d']
-    sheet_dict = {'historical price - max': '1d', 'historical price - 5y': '1d', 'historical price - 1y': '1d', 'historical price - 6mo': '1d', 'historical price - 3mo': '1d', 'historical price - 1mo': '60m', 'historical price - 10d': '30m', 'historical price - 1d': '1m'}    
+    sheet_list = ['historical price - max', 'historical price - 5y', 'historical price - 1y', 'historical price - 6mo', 'historical price - 3mo', 'historical price - 1mo', 'historical price - 5d', 'historical price - 1d']
+    sheet_dict = {'historical price - max': '1d', 'historical price - 5y': '1d', 'historical price - 1y': '1d', 'historical price - 6mo': '1d', 'historical price - 3mo': '1d', 'historical price - 1mo': '1d', 'historical price - 5d': '60m', 'historical price - 1d': '1m'}    
     try:      
         #Dump trend data for the periods as csv files to be called from VBA
         for sheet in sheet_list:   
@@ -80,10 +80,10 @@ def get_info():
         input()
         quit()
     try:
-        main_sht.range("C4").value = info_set['value']
-        main_sht.range("C3").value = info_set['name']
-        main_sht.range("C12").value = info_set['name']
-        main_sht.range("C13").value = info_set['GICS Sector']
+        main_sht.range("C5").value = info_set['value']
+        main_sht.range("B2").value = info_set['name']
+        main_sht.range("B27").value = info_set['name']
+        main_sht.range("B3").value = info_set['GICS Sector']
         main_sht.range("H2").value = info_set['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
         main_sht.range("L2").value = info_set['52-Week Range'].split("-")[0]
         main_sht.range("L3").value = info_set['52-Week Range'].split("-")[1]
@@ -92,9 +92,9 @@ def get_info():
         main_sht.range("J2").value = info_set['Day Range'].split("-")[1]
         main_sht.range("J3").value = info_set['Day Range'].split("-")[0]
         main_sht.range("H3").value = info_set['Volume - 30 Day Avg']
-        main_sht.range("C10").value = info_set['as of text']
-        main_sht.range("B103").value = info_set['day change cents']
-        main_sht.range("B104").value = info_set['day change percent']
+        main_sht.range("C7").value = info_set['as of text']
+        main_sht.range("B182").value = info_set['day change cents']
+        main_sht.range("B183").value = info_set['day change percent']
     except:
         print(f"Something went wrong importing {ticker} info into excel..")
         driver.quit()

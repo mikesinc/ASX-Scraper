@@ -9,4 +9,5 @@ __pycache__
 *.csv
 scrape-fair-value.py
 patch.py
+patch2.py
 main-scrape.py
