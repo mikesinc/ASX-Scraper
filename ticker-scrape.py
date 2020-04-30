@@ -6,7 +6,6 @@ import requests
 import os
 import pywintypes
 import xlwings as xw
-import glob
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
@@ -80,10 +79,14 @@ def get_info():
         input()
         quit()
     try:
+
+        for asxticker, sector in pd.read_csv(f'{os.getcwd()}/ASXListedCompanies.csv', usecols=[1, 2], header=-1).values:
+            if asxticker == ticker:
+                main_sht.range("B3").value = sector
+                
         main_sht.range("C5").value = info_set['value']
         main_sht.range("B2").value = info_set['name']
         main_sht.range("B27").value = info_set['name']
-        main_sht.range("B3").value = info_set['GICS Sector']
         main_sht.range("H2").value = info_set['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
         main_sht.range("L2").value = info_set['52-Week Range'].split("-")[0]
         main_sht.range("L3").value = info_set['52-Week Range'].split("-")[1]
@@ -109,7 +112,7 @@ if __name__ == '__main__':
     options.headless = True
     geckodriver = os.getcwd() + '\\geckodriver.exe'
     driver = webdriver.Firefox(executable_path=geckodriver, options=options)
-    extension_dir = 'C:\\Users\\Michael\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\0mhu8le1.default-release\\extensions\\'
+    extension_dir = os.getcwd() + '\\driver_extensions\\'
     extensions = [
         'https-everywhere@eff.org.xpi',
         'uBlock0@raymondhill.net.xpi',

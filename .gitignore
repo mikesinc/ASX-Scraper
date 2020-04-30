@@ -2,6 +2,7 @@
 
 config.py
 /data
+/driver_extensions
 __pycache__
 *.xlsm
 *.exe
@@ -9,5 +10,4 @@ __pycache__
 *.csv
 scrape-fair-value.py
 patch.py
-patch2.py
 main-scrape.py
