@@ -7,9 +7,7 @@ import sys
 from statistics import mean
 
 #Set directory
-directory = os.getcwd() + "/data"
-if not os.path.exists(directory):
-    os.makedirs(directory)
+directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data'))
 
 #Criteria details
 try:
@@ -90,9 +88,9 @@ try:
     }
 except:
     print('Could not find the worksheet!')
-    print('Press any key to close...')
+    print('Press enter to close...')
     input()
-    quit()
+    sys.exit()
 
 #Get CSV database
 database = pd.read_csv(f"{directory}/database.csv")
@@ -129,7 +127,7 @@ def basic_screen(searchtype):
     ticker_props = {}
     for ticker in tickers:
         ticker_props[ticker] = []
-    for row in database.get_values():
+    for row in database.to_numpy():
         ticker = row[0].split(" ")[0]
         for Property in criterion.keys():
             if Property in row[0] and not "from" in row[0] and not "available" in row[0]: #ensure "from" and "available" aren't in the word to remove extra net income results
@@ -250,19 +248,19 @@ def copy_to_excel(tickers):
 
 if __name__ == '__main__':
     try:
-    #Get ticker list fromm database (not all ASX listed tickers have data in database)
+        #Get ticker list fromm database (not all ASX listed tickers have data in database)
         tickers = []
-        for row in database.get_values():
+        for row in database.to_numpy():
             tickers.append(row[0].split(" ")[0])
         tickers = sorted(list(set(tickers)))
-        #Go through full ASX listing and extract name and sector of those listings which have data in database
+            #Go through full ASX listing and extract name and sector of those listings which have data in database
         listings = {}
-        for name, ticker, sector in pd.read_csv(f'{os.getcwd()}/ASXListedCompanies.csv', usecols=[0, 1, 2], header=-1).values:
+        for name, ticker, sector in pd.read_csv(f'{directory}/ASXListedCompanies.csv', usecols=[0, 1, 2], header=None).values:
             if ticker in tickers:
                 listings[ticker] = name, sector
+        print("ticker list unfiltered: ", len(tickers), len(listings.keys()))
     except:
         print("error generating ticker listings")
-    print("ticker list unfiltered: ", len(tickers), len(listings.keys()))
 
     try:
         screened_lists = [] #List that stores lists of tickers that match criteria for each property

@@ -3,6 +3,7 @@
 config.py
 /data
 /driver_extensions
+/screen
 __pycache__
 *.xlsm
 *.exe

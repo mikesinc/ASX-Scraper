@@ -14,20 +14,19 @@ from selenium.webdriver.support import expected_conditions as EC
 import sys
 
 #Set directory
-directory = os.getcwd() + "/data"
-if not os.path.exists(directory):
-    os.makedirs(directory)
+directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data'))
 
 #Excel details
 try:
-    wb = xw.Book('ASXScraper.xlsm')
+    wb = xw.Book(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'ASXScraper.xlsm')))
+    # wb = xw.Book('ASXScraper.xlsm')
     main_sht = wb.sheets(str(sys.argv[1]))
     ticker = main_sht.range('C4').value
 except:
     print('Could not find the worksheet!')
-    print('Press any key to close...')
+    print('Press enter to close...')
     input()
-    quit()
+    sys.exit()
 
 #clean strings
 def remove_multiple_spaces(string):
@@ -37,17 +36,16 @@ def remove_multiple_spaces(string):
 
 #Get historical data
 def get_stock_history():
-    sheet_list = ['historical price - max', 'historical price - 5y', 'historical price - 1y', 'historical price - 6mo', 'historical price - 3mo', 'historical price - 1mo', 'historical price - 5d', 'historical price - 1d']
     sheet_dict = {'historical price - max': '1d', 'historical price - 5y': '1d', 'historical price - 1y': '1d', 'historical price - 6mo': '1d', 'historical price - 3mo': '1d', 'historical price - 1mo': '1d', 'historical price - 5d': '60m', 'historical price - 1d': '1m'}    
     try:      
         #Dump trend data for the periods as csv files to be called from VBA
-        for sheet in sheet_list:   
+        for sheet in sheet_dict.keys():   
             yf.download(ticker+'.AX', period=sheet.split("- ")[1], interval=sheet_dict[sheet]).to_csv(f'{directory}/trend data/{ticker}_{sheet.split("- ")[1]}.csv', header=True)
     except:
         print(f"Something went wrong retrieving {ticker} historical data")
-        print('Press any key to close...')
+        print('Press enter to close...')
         input()
-        quit()
+        sys.exit()
 
 #Get financials
 def get_info():
@@ -57,9 +55,9 @@ def get_info():
     except:
         print(f"Something went wrong loading the {ticker} morning star page!")
         driver.quit()
-        print('Press any key to close...')
+        print('Press enter to close...')
         input()
-        quit()
+        sys.exit()
     try:
         html = driver.page_source
         soup = BeautifulSoup(html,'html.parser')
@@ -75,15 +73,14 @@ def get_info():
     except:
         print(f"Something went wrong scraping {ticker} info!")
         driver.quit()
-        print('Press any key to close...')
+        print('Press enter to close...')
         input()
-        quit()
-    try:
+        sys.exit()
 
-        for asxticker, sector in pd.read_csv(f'{os.getcwd()}/ASXListedCompanies.csv', usecols=[1, 2], header=-1).values:
+    try:
+        for asxticker, sector in pd.read_csv(f'{directory}/ASXListedCompanies.csv', usecols=[1, 2], header=None).values:
             if asxticker == ticker:
-                main_sht.range("B3").value = sector
-                
+                main_sht.range("B3").value = sector     
         main_sht.range("C5").value = info_set['value']
         main_sht.range("B2").value = info_set['name']
         main_sht.range("B27").value = info_set['name']
@@ -101,21 +98,23 @@ def get_info():
     except:
         print(f"Something went wrong importing {ticker} info into excel..")
         driver.quit()
-        print('Press any key to close...')
+        print('Press enter to close...')
         input()
-        quit()
+        sys.exit()
 
 if __name__ == '__main__':
     # initialise driver
     print("....LOADING: Starting Web Driver...")
     options = Options()
     options.headless = True
-    geckodriver = os.getcwd() + '\\geckodriver.exe'
+    # geckodriver = os.getcwd() + '\\geckodriver.exe'
+    geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'geckodriver.exe'))
     driver = webdriver.Firefox(executable_path=geckodriver, options=options)
-    extension_dir = os.getcwd() + '\\driver_extensions\\'
+    # extension_dir = os.getcwd() + '\\driver_extensions\\'
+    extension_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'driver_extensions'))
     extensions = [
-        'https-everywhere@eff.org.xpi',
-        'uBlock0@raymondhill.net.xpi',
+        '\\https-everywhere@eff.org.xpi',
+        '\\uBlock0@raymondhill.net.xpi',
         ]
     for extension in extensions:
         driver.install_addon(extension_dir + extension, temporary=True)
