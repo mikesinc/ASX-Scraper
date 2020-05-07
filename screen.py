@@ -28,7 +28,7 @@ try:
             'min': wb.sheets("HOME").range("D28").value,
             'screened': {}
             },
-        "eps basic": {
+        "Book value ($)": {
             'max': wb.sheets("HOME").range("H23").value,
             'min': wb.sheets("HOME").range("H24").value,
             'screened': {}
@@ -43,7 +43,7 @@ try:
             'min': wb.sheets("HOME").range("B28").value,
             'screened': {}
             },
-        "total cash": {
+        "Cash on hand": {
             'max': wb.sheets("HOME").range("F27").value,
             'min': wb.sheets("HOME").range("F28").value,
             'screened': {}
@@ -53,22 +53,22 @@ try:
             'min': wb.sheets("HOME").range("J28").value,
             'screened': {}
             }, 
-        "ebit": {
+        "EBIT": {
             'max': wb.sheets("HOME").range("B31").value,
             'min': wb.sheets("HOME").range("B32").value,
             'screened': {}
             }, 
-        "ebitda": {
+        "EBITDA": {
             'max': wb.sheets("HOME").range("D31").value,
             'min': wb.sheets("HOME").range("D32").value,
             'screened': {}
             }, 
-        "net income": {
+        "Return on capital (%)": {
             'max': wb.sheets("HOME").range("H31").value,
             'min': wb.sheets("HOME").range("H32").value,
             'screened': {}
             }, 
-        "long-term debt": {
+        "L/T Debt": {
             'max': wb.sheets("HOME").range("F31").value,
             'min': wb.sheets("HOME").range("F32").value,
             'screened': {}
@@ -161,9 +161,9 @@ def screen(searchtype):
 
     try:
         market_cap_values = criterion['Market cap']['screened']
-        longterm_debt_values = criterion['long-term debt']['screened']
-        total_cash_values = criterion['total cash']['screened']
-        ebitda_values = criterion['ebitda']['screened']
+        longterm_debt_values = criterion['L/T Debt']['screened']
+        total_cash_values = criterion['Cash on hand']['screened']
+        ebitda_values = criterion['EBITDA']['screened']
     except:
         print("something went wrong collecting formula inputs.")
                 
