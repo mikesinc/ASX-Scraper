@@ -8,6 +8,7 @@ from statistics import mean
 
 #Set directory
 directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data'))
+# directory = os.getcwd() + '/data'
 
 #Criteria details
 try:
@@ -53,7 +54,7 @@ try:
             'min': wb.sheets("HOME").range("J28").value,
             'screened': {}
             }, 
-        "EBIT": {
+        "S/T debt": {
             'max': wb.sheets("HOME").range("B31").value,
             'min': wb.sheets("HOME").range("B32").value,
             'screened': {}
@@ -84,6 +85,11 @@ try:
             'max': wb.sheets("HOME").range("F23").value,
             'min': wb.sheets("HOME").range("F24").value,
             'screened': {}
+            },
+        "ND:EBITDA": {
+            'max': wb.sheets("HOME").range("J31").value,
+            'min': wb.sheets("HOME").range("J32").value,
+            'screened': {}
             }   
     }
 except:
@@ -99,10 +105,10 @@ database = pd.read_csv(f"{directory}/database.csv")
 def check(value, Max, Min, Dict, ticker):
     #Check if criteria entered
     try:
-        if Max or Min:
+        if Max or Min or Max == 0 or Min == 0:
             #Check if has min AND max criteria
             if not value == "—":
-                if Max and Min:
+                if (Max and Min) or (Max == 0 and Min) or (Max and Min == 0):
                 #Add tickers within criteria range
                     if float(value) >= Min and float(value) <= Max:
                         Dict[ticker] = float(value)
@@ -162,6 +168,7 @@ def screen(searchtype):
     try:
         market_cap_values = criterion['Market cap']['screened']
         longterm_debt_values = criterion['L/T Debt']['screened']
+        shortterm_debt_values = criterion['S/T debt']['screened']
         total_cash_values = criterion['Cash on hand']['screened']
         ebitda_values = criterion['EBITDA']['screened']
     except:
@@ -172,6 +179,7 @@ def screen(searchtype):
     for ticker in screened_tickers: #Reset values
         CY_value = None
         EV_value = None
+        ND_EBITDA_ratio = None
         market_cap = None
         longterm_debt = None
         ebitda = None
@@ -182,6 +190,8 @@ def screen(searchtype):
                 market_cap = float(market_cap_values[ticker])
             if ticker in longterm_debt_values and not longterm_debt_values[ticker] == "—":
                 longterm_debt = float(longterm_debt_values[ticker])
+            if ticker in shortterm_debt_values and not shortterm_debt_values[ticker] == "—":
+                shortterm_debt = float(shortterm_debt_values[ticker])
             if ticker in total_cash_values and not total_cash_values[ticker] == "—":
                 total_cash = float(total_cash_values[ticker])
             if ticker in ebitda_values and not ebitda_values[ticker] == "—":
@@ -197,29 +207,40 @@ def screen(searchtype):
                     if total_cash:
                         EV_value = (longterm_debt + market_cap - total_cash) / ebitda
                         check(EV_value, functional_criterion['EV']['max'], functional_criterion['EV']['min'], functional_criterion['EV']['screened'], ticker)
+                        if shortterm_debt:
+                            if not ebitda == 0:
+                                ND_EBITDA_ratio = (longterm_debt + shortterm_debt - total_cash)/ebitda
+                                check(ND_EBITDA_ratio, functional_criterion['ND:EBITDA']['max'], functional_criterion['ND:EBITDA']['min'], functional_criterion['ND:EBITDA']['screened'], ticker)
+                        else:
+                            check("—", functional_criterion['EV']['max'], functional_criterion['EV']['min'], functional_criterion['EV']['screened'], ticker)
+                            check("—", functional_criterion['CY']['max'], functional_criterion['CY']['min'], functional_criterion['CY']['screened'], ticker)
+                            check("—", functional_criterion['ND:EBITDA']['max'], functional_criterion['ND:EBITDA']['min'], functional_criterion['ND:EBITDA']['screened'], ticker)
                     else:
                         check("—", functional_criterion['EV']['max'], functional_criterion['EV']['min'], functional_criterion['EV']['screened'], ticker)
-                        check("—", functional_criterion['CY']['max'], functional_criterion['CY']['min'], functional_criterion['CY']['screened'], ticker)
-            else: 
+                        check("—", functional_criterion['CY']['max'], functional_criterion['CY']['min'], functional_criterion['CY']['screened'], ticker) 
+                        check("—", functional_criterion['ND:EBITDA']['max'], functional_criterion['ND:EBITDA']['min'], functional_criterion['ND:EBITDA']['screened'], ticker)   
+            else:
                 #If they do not exist (i.e. cannot perform the calculations), do a search on default "—", so that it is still added to the results 
                 #given there were no criteria entered for that specific property.)
                 check("—", functional_criterion['CY']['max'], functional_criterion['CY']['min'], functional_criterion['CY']['screened'], ticker)
                 check("—", functional_criterion['EV']['max'], functional_criterion['EV']['min'], functional_criterion['EV']['screened'], ticker)
+                check("—", functional_criterion['ND:EBITDA']['max'], functional_criterion['ND:EBITDA']['min'], functional_criterion['ND:EBITDA']['screened'], ticker)
         except:
-            print("something went wrong calculating EV and / or CY values")
+            print("something went wrong calculating one or all of EV, CY and ND:EBITDA values")
 
     try:
         for Property in functional_criterion.keys():
             screened_lists.append(functional_criterion[Property]['screened'])
         return sorted(list(set(screened_lists[0]).intersection(*screened_lists)))
+        
     except:
         print("something went wrong with functional screen.")
 
 def sector_screen(tickers):
     sector_filtered_tickers = tickers #Default to list of all tickers after main screening
-    if not wb.sheets("HOME").range("J31").value == "All": #If sector criteria defined, further screen for this
+    if not wb.sheets("HOME").range("F35").value == "All": #If sector criteria defined, further screen for this
         sector_filtered_tickers = [] #Redefine as empty list to be filled with tickers matching sector
-        sector_criteria = wb.sheets("HOME").range("J31").value
+        sector_criteria = wb.sheets("HOME").range("F35").value
         for ticker in tickers:
             if listings[ticker][1] == sector_criteria:
                 sector_filtered_tickers.append(ticker)
@@ -229,7 +250,7 @@ def sector_screen(tickers):
 def copy_to_excel(tickers):
     try:
      #Clear cells
-        wb.sheets("HOME").range("A42:S2500").clear_contents()
+        wb.sheets("HOME").range("A42:T2500").clear_contents()
         wb.sheets("HOME").range("B40").value = f"{len(tickers)} listings matched your critera"
         
         rows = []

@@ -83,7 +83,7 @@ def get_info():
                 main_sht.range("B3").value = sector     
         main_sht.range("C5").value = info_set['value']
         main_sht.range("B2").value = info_set['name']
-        main_sht.range("B27").value = info_set['name']
+        main_sht.range("B18").value = info_set['name']
         main_sht.range("H2").value = info_set['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
         main_sht.range("L2").value = info_set['52-Week Range'].split("-")[0]
         main_sht.range("L3").value = info_set['52-Week Range'].split("-")[1]
