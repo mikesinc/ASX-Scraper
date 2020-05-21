@@ -11,3 +11,5 @@ __pycache__
 *.log
 *.csv
 scrape-fair-value.py
+stdebtpatch.py
+cashpatch.py
